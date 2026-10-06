@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: user-management-api
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
