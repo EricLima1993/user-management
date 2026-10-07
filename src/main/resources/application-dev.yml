@@ -6,3 +6,12 @@ spring:
   h2:
     console:
       enabled: true
+app:
+  security:
+    jwt:
+      secret: dev-only-secret-change-in-prod-0123456789-abcdef
+      expiration-minutes: 60
+    admin:
+      name: Administrador
+      email: admin@local.dev
+      password: Admin@123

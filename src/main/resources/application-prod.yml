@@ -3,3 +3,12 @@ spring:
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+    admin:
+      name: ${ADMIN_NAME:Administrador}
+      email: ${ADMIN_EMAIL}
+      password: ${ADMIN_PASSWORD}
