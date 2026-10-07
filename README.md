@@ -1,15 +1,19 @@
-# User Management
+# User Management API
 
-Aplicação fullstack de gerenciamento de usuários e endereços, desenvolvida como teste técnico para a vaga de Analista de Sistemas Java Pleno.
+API REST de gerenciamento de usuários e endereços, desenvolvida como parte de um teste técnico para a vaga de Analista de Sistemas Java Pleno.
 
-Cada usuário possui um ou mais endereços, validados pela API pública do [ViaCEP](https://viacep.com.br). A aplicação inclui autenticação e autorização por perfil, paginação, auditoria, exclusão lógica e tratamento padronizado de erros.
+Cada usuário possui um ou mais endereços, validados pela API pública do [ViaCEP](https://viacep.com.br). A API inclui autenticação e autorização por perfil, paginação, auditoria, exclusão lógica e tratamento padronizado de erros.
+
+> O frontend (Angular) fica em um repositório separado: _link a adicionar_.
 
 ## Status do projeto
 
-- [x] Backend: estrutura, perfis de configuração, migration e entidades
-- [ ] Backend: segurança (JWT), CRUD, integração com ViaCEP, tratamento de erros
-- [ ] Backend: testes e cobertura
-- [ ] Frontend Angular
+- [x] Estrutura do projeto, perfis de configuração, migration e entidades
+- [ ] Segurança (JWT e autorização por perfil)
+- [ ] CRUD de usuários e endereços
+- [ ] Integração com o ViaCEP e cache
+- [ ] Tratamento de erros (Problem Details) e documentação OpenAPI
+- [ ] Testes e relatório de cobertura
 - [ ] Docker e Docker Compose
 
 > Este README é atualizado conforme o desenvolvimento avança.
@@ -18,22 +22,33 @@ Cada usuário possui um ou mais endereços, validados pela API pública do [ViaC
 
 | Camada | Tecnologias |
 |---|---|
-| Backend | Java 21, Spring Boot 4.1.1, Spring Data JPA, Spring Security, Bean Validation, MapStruct, Lombok |
-| Banco de dados | PostgreSQL (produção), H2 em modo PostgreSQL (desenvolvimento e testes), Flyway |
-| Documentação da API | OpenAPI / Swagger UI (springdoc) |
-| Frontend | Angular |
+| Linguagem e framework | Java 21, Spring Boot 4.1.1 |
+| Persistência | Spring Data JPA, Hibernate, Flyway |
+| Segurança | Spring Security, JWT, BCrypt |
+| Validação e mapeamento | Bean Validation, MapStruct, Lombok |
+| Banco de dados | PostgreSQL (produção), H2 em modo PostgreSQL (desenvolvimento e testes) |
+| Documentação | OpenAPI / Swagger UI (springdoc) |
 | Infraestrutura | Docker e Docker Compose |
 
-## Estrutura do repositório
+## Estrutura do projeto
 
 ```
-user-management/
-├── backend/
-│   └── user-management-api/   # API Spring Boot
-├── frontend/                  # Aplicação Angular (em desenvolvimento)
-├── docs/
-│   └── decisions.md           # Decisões de arquitetura
-└── README.md
+src/main/java/br/com/eric/usermanagement/
+├── config         # Auditoria, cache, OpenAPI
+├── controller
+├── service
+├── repository
+├── domain         # Entidades e enums
+├── dto
+├── mapper
+├── client         # Integração com o ViaCEP
+├── security
+└── exception
+src/main/resources/
+├── application.yml
+├── application-dev.yml
+├── application-prod.yml
+└── db/migration   # Migrations do Flyway
 ```
 
 ## Como executar
@@ -43,17 +58,15 @@ user-management/
 - JDK 21
 - Maven (ou o wrapper `mvnw` incluído no projeto)
 
-### Backend em modo de desenvolvimento (H2)
+### Modo de desenvolvimento (H2)
 
 ```bash
-cd backend/user-management-api
 ./mvnw spring-boot:run
 ```
 
 No Windows (PowerShell):
 
 ```powershell
-cd backend\user-management-api
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -83,18 +96,6 @@ _Será documentado após a conclusão do Docker Compose._
 ### Testes
 
 _Será documentado após a implementação dos testes._
-
-## Principais decisões de arquitetura
-
-As decisões completas, com o raciocínio de cada uma, estão em [docs/decisions.md](docs/decisions.md). Resumo até o momento:
-
-- **Spring Boot 4.1.1 e Java 21**, por serem a linha atual do framework.
-- **Flyway no controle do schema**, com `ddl-auto: validate`, para que o Hibernate apenas confira o mapeamento.
-- **H2 em modo PostgreSQL** no desenvolvimento, para reduzir diferenças em relação à produção.
-- **Exclusão lógica** com a coluna `deleted` e `@SQLRestriction`, que filtra os registros excluídos em todas as consultas. O `@SQLDelete` funciona como proteção caso alguém chame a exclusão física por engano.
-- **Auditoria** com `AuditorAware` (`createdAt`, `updatedAt`, `createdBy`, `updatedBy`).
-- **Tabela `users`**, porque `user` é palavra reservada no PostgreSQL.
-- **E-mail único global**, mesmo para usuários excluídos logicamente, comportamento idêntico no H2 e no PostgreSQL.
 
 ## Autor
 
