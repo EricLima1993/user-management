@@ -1,0 +1,1157 @@
+{
+  "info": {
+    "name": "User Management API",
+    "description": "Cenários do dia 3 (CRUD, permissões, endereço principal, exclusão lógica).\n\nIMPORTANTE: o H2 é em memória. Reinicie a aplicação antes de rodar a coleção inteira, senão o e-mail da Maria já existirá. Rode na ordem (Collection Runner).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "mariaToken",
+      "value": ""
+    },
+    {
+      "key": "mariaId",
+      "value": ""
+    },
+    {
+      "key": "mariaAddressId",
+      "value": ""
+    },
+    {
+      "key": "mariaAddress2Id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticação",
+      "item": [
+        {
+          "name": "1.1 Login ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@local.dev\",\n  \"password\": \"Admin@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().accessToken;",
+                  "pm.test(\"Token presente\", () => pm.expect(t).to.be.a(\"string\").and.not.empty);",
+                  "pm.collectionVariables.set(\"adminToken\", t);",
+                  "let p = t.split(\".\")[1].replace(/-/g, \"+\").replace(/_/g, \"/\");",
+                  "p = p + \"=\".repeat((4 - (p.length % 4)) % 4);",
+                  "const claims = JSON.parse(atob(p));",
+                  "pm.test(\"Claim role = ADMIN\", () => pm.expect(claims.role).to.eql(\"ADMIN\"));",
+                  "pm.collectionVariables.set(\"adminId\", claims.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Login com senha errada (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@local.dev\",\n  \"password\": \"errada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Rota protegida sem token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{adminId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{adminId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Criação de usuário (ADMIN)",
+      "item": [
+        {
+          "name": "2.1 ADMIN cria Maria (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"email\": \"maria@teste.com\",\n  \"phone\": \"11999990000\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Header Location presente\", () => pm.expect(pm.response.headers.has(\"Location\")).to.be.true);",
+                  "pm.test(\"Resposta não expõe senha\", () => pm.expect(b).to.not.have.property(\"password\"));",
+                  "pm.test(\"E-mail em minúsculas\", () => pm.expect(b.email).to.eql(\"maria@teste.com\"));",
+                  "pm.test(\"Status ACTIVE\", () => pm.expect(b.status).to.eql(\"ACTIVE\"));",
+                  "pm.test(\"Auditoria: createdBy = admin\", () => pm.expect(b.createdBy).to.eql(\"admin@local.dev\"));",
+                  "pm.test(\"Um endereço principal\", () => pm.expect(b.addresses.filter(a => a.mainAddress).length).to.eql(1));",
+                  "pm.collectionVariables.set(\"mariaId\", b.id);",
+                  "pm.collectionVariables.set(\"mariaAddressId\", b.addresses[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 E-mail duplicado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"email\": \"maria@teste.com\",\n  \"phone\": \"11999990000\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Dois endereços principais (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Dois\",\n  \"email\": \"maria2@teste.com\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"20040020\", \"street\": \"Rua da Assembleia\", \"number\": \"200\", \"state\": \"RJ\", \"city\": \"Rio de Janeiro\", \"district\": \"Centro\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Dados inválidos (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"email\": \"email-invalido\",\n  \"password\": \"123\",\n  \"role\": \"USER\",\n  \"addresses\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Login Maria",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"maria@teste.com\",\n  \"password\": \"Senha@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"mariaToken\", pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Permissões da Maria (USER)",
+      "item": [
+        {
+          "name": "3.1 Maria vê o próprio usuário (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mariaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Retorna a Maria\", () => pm.expect(pm.response.json().email).to.eql(\"maria@teste.com\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Maria vê o ADMIN (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{adminId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{adminId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mariaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Maria tenta criar usuário (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mariaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Intruso\",\n  \"email\": \"maria3@teste.com\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Maria edita o próprio nome (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mariaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria S. Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Nome atualizado\", () => pm.expect(pm.response.json().name).to.eql(\"Maria S. Silva\"));",
+                  "pm.test(\"Auditoria: updatedBy = maria\", () => pm.expect(pm.response.json().updatedBy).to.eql(\"maria@teste.com\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Maria tenta virar ADMIN (403)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mariaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria S. Silva\",\n  \"phone\": \"11999990000\",\n  \"role\": \"ADMIN\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Maria tenta excluir (403)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mariaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Endereços (ADMIN)",
+      "item": [
+        {
+          "name": "4.1 Adiciona segundo endereço (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"20040020\", \"street\": \"Rua da Assembleia\", \"number\": \"200\", \"state\": \"RJ\", \"city\": \"Rio de Janeiro\", \"district\": \"Centro\", \"mainAddress\": false}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const a = pm.response.json().addresses;",
+                  "pm.test(\"Dois endereços\", () => pm.expect(a.length).to.eql(2));",
+                  "pm.test(\"Só um principal\", () => pm.expect(a.filter(x => x.mainAddress).length).to.eql(1));",
+                  "const second = a.find(x => x.number === \"200\");",
+                  "pm.collectionVariables.set(\"mariaAddress2Id\", second.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Dois principais no update (422)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"20040020\", \"street\": \"Rua da Assembleia\", \"number\": \"200\", \"state\": \"RJ\", \"city\": \"Rio de Janeiro\", \"district\": \"Centro\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Remove o segundo endereço (resposta com 1)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const a = pm.response.json().addresses;",
+                  "pm.test(\"Endereço removido não aparece na resposta\", () => pm.expect(a.length).to.eql(1));",
+                  "pm.test(\"Sobrou o principal\", () => pm.expect(a[0].mainAddress).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Status e exclusão lógica",
+      "item": [
+        {
+          "name": "5.1 ADMIN inativa a Maria (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"status\": \"INACTIVE\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Status INACTIVE\", () => pm.expect(pm.response.json().status).to.eql(\"INACTIVE\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Maria inativa não consegue logar (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"maria@teste.com\",\n  \"password\": \"Senha@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 ADMIN exclui a Maria (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 Maria excluída não é encontrada (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{mariaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{mariaId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.5 Recriar o mesmo e-mail (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"email\": \"maria@teste.com\",\n  \"phone\": \"11999990000\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

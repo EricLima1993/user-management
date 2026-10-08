@@ -44,4 +44,13 @@ public class User extends AuditableEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses = new ArrayList<>();
+
+    public void addAddress(Address address) {
+        address.setUser(this);
+        addresses.add(address);
+    }
+
+    public List<Address> getActiveAddresses() {
+        return addresses.stream().filter(address -> !address.isDeleted()).toList();
+    }
 }

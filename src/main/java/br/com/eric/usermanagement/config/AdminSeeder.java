@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,13 +28,15 @@ public class AdminSeeder implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         SecurityProperties.Admin admin = properties.admin();
-        if (userRepository.findByEmail(admin.email()).isPresent()) {
+        String email = admin.email().trim().toLowerCase(Locale.ROOT);
+        if (userRepository.findByEmail(email).isPresent())  {
             return;
         }
 
+
         User user = new User();
         user.setName(admin.name());
-        user.setEmail(admin.email());
+        user.setEmail(email);
         user.setPassword(passwordEncoder.encode(admin.password()));
         user.setRole(Role.ADMIN);
         user.setStatus(UserStatus.ACTIVE);

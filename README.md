@@ -10,8 +10,9 @@ Cada usuário possui um ou mais endereços, validados pela API pública do [ViaC
 
 - [x] Estrutura do projeto, perfis de configuração, migration e entidades
 - [x] Autenticação com JWT (login, emissão de token, rotas protegidas) e criação do ADMIN inicial
-- [ ] Autorização por perfil nos endpoints (ADMIN e USER)
-- [ ] CRUD de usuários e endereços
+- [x] Autorização por perfil nos endpoints (ADMIN e USER)
+- [x] CRUD de usuários e endereços (criar, buscar por id, atualizar e excluir)
+- [ ] Listagem com paginação, filtros e ordenação
 - [ ] Integração com o ViaCEP e cache
 - [ ] Tratamento de erros (Problem Details) e documentação OpenAPI
 - [ ] Testes e relatório de cobertura
@@ -149,6 +150,46 @@ curl http://localhost:8080/api/v1/users \
 | Token válido sem permissão para o recurso | `403` |
 
 O token carrega o e-mail (`sub`), o perfil (`role`) e o id do usuário (`userId`). Ele é assinado, mas não criptografado, e por isso não contém dados sensíveis.
+
+## Endpoints
+
+Base: `/api/v1`. A documentação interativa fica no Swagger UI.
+
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `POST` | `/auth/login` | Público | Autentica e devolve o token JWT |
+| `POST` | `/users` | ADMIN | Cria usuário com um ou mais endereços (`201` + `Location`) |
+| `GET` | `/users/{id}` | ADMIN ou o próprio usuário | Busca usuário com seus endereços |
+| `PUT` | `/users/{id}` | ADMIN ou o próprio usuário | Atualiza usuário e endereços |
+| `DELETE` | `/users/{id}` | ADMIN | Exclusão lógica do usuário e dos endereços (`204`) |
+
+A listagem paginada com filtros e ordenação está em desenvolvimento.
+
+### Regras de negócio
+
+- **Perfis:** ADMIN tem acesso completo. USER visualiza e edita apenas os próprios dados e não pode alterar o próprio perfil (`role`) nem o `status`.
+- **Endereços:** um usuário pode ter vários, mas apenas um é o principal. Se nenhum for marcado, o primeiro vira principal. Mais de um marcado é rejeitado.
+- **Atualização de endereços:** com `id`, atualiza o existente. Sem `id`, cria um novo. Os endereços omitidos da lista são excluídos logicamente.
+- **E-mail:** único e gravado em minúsculas. Permanece reservado mesmo após a exclusão lógica do usuário. Não pode ser alterado depois do cadastro.
+- **Exclusão lógica:** nada é removido do banco. Registros excluídos deixam de aparecer nas consultas.
+- **Auditoria:** `createdAt`, `updatedAt`, `createdBy` e `updatedBy` são preenchidos automaticamente, e o usuário registrado é o e-mail do token.
+- **Senha:** armazenada com hash BCrypt e nunca devolvida nas respostas.
+
+### Códigos de resposta
+
+| Código | Quando |
+|---|---|
+| `200` / `201` / `204` | Sucesso (consulta e atualização / criação / exclusão) |
+| `400` | Dados inválidos (validação dos campos) |
+| `401` | Token ausente, inválido ou expirado, ou credenciais inválidas no login |
+| `403` | Usuário autenticado sem permissão para o recurso ou a alteração |
+| `404` | Usuário não encontrado (inclusive excluído) |
+| `409` | E-mail já cadastrado |
+| `422` | Regra de negócio violada (ex.: mais de um endereço principal) |
+
+### Coleção Postman
+
+A coleção `docs/postman/user-management-api.postman_collection.json` cobre os principais cenários (autenticação, criação, permissões, endereços e exclusão lógica), com verificações automáticas. Por usar H2 em memória, reinicie a aplicação antes de rodar a coleção completa.
 
 ## Autor
 

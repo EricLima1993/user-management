@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -19,8 +21,8 @@ public class AuthService {
     private final JwtService jwtService;
 
     public TokenResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(InvalidCredentialsException::new);
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        User user = userRepository.findByEmail(email).orElseThrow(InvalidCredentialsException::new);
 
         boolean validPassword = passwordEncoder.matches(request.password(), user.getPassword());
         if (!validPassword || user.getStatus() != UserStatus.ACTIVE) {
