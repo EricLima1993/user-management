@@ -3,10 +3,7 @@ package br.com.eric.usermanagement.service;
 import br.com.eric.usermanagement.domain.entity.Address;
 import br.com.eric.usermanagement.domain.entity.User;
 import br.com.eric.usermanagement.domain.enums.UserStatus;
-import br.com.eric.usermanagement.dto.AddressRequest;
-import br.com.eric.usermanagement.dto.UserCreateRequest;
-import br.com.eric.usermanagement.dto.UserResponse;
-import br.com.eric.usermanagement.dto.UserUpdateRequest;
+import br.com.eric.usermanagement.dto.*;
 import br.com.eric.usermanagement.exception.BusinessRuleException;
 import br.com.eric.usermanagement.exception.EmailAlreadyExistsException;
 import br.com.eric.usermanagement.exception.ResourceNotFoundException;
@@ -14,6 +11,7 @@ import br.com.eric.usermanagement.mapper.AddressMapper;
 import br.com.eric.usermanagement.mapper.UserMapper;
 import br.com.eric.usermanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,6 +29,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final AddressMapper addressMapper;
     private final PasswordEncoder passwordEncoder;
+    private final CepValidationService cepValidationService;
 
     @Transactional
     public UserResponse create(UserCreateRequest request) {
@@ -45,6 +44,7 @@ public class UserService {
         user.setStatus(UserStatus.ACTIVE);
 
         List<Address> addresses = request.addresses().stream().map(addressMapper::toEntity).toList();
+        addresses.forEach(cepValidationService::validateAndEnrich);
         ensureSingleMainAddress(addresses);
         addresses.forEach(user::addAddress);
 
@@ -102,7 +102,9 @@ public class UserService {
 
         for (AddressRequest request : requests) {
             if (request.id() == null) {
-                user.addAddress(addressMapper.toEntity(request));
+                Address created = addressMapper.toEntity(request);
+                cepValidationService.validateAndEnrich(created);
+                user.addAddress(created);
                 continue;
             }
             Address existing = current.get(request.id());
@@ -110,6 +112,7 @@ public class UserService {
                 throw new BusinessRuleException("Endereço " + request.id() + " não pertence ao usuário");
             }
             addressMapper.updateEntity(request, existing);
+            cepValidationService.validateAndEnrich(existing);
             kept.add(request.id());
         }
 
@@ -128,5 +131,10 @@ public class UserService {
         if (mains == 0) {
             addresses.get(0).setMainAddress(true);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<UserSummaryResponse> search(UserFilter filter, Pageable pageable) {
+        return PageResponse.from(userRepository.search(filter, pageable));
     }
 }

@@ -12,3 +12,8 @@ app:
       name: ${ADMIN_NAME:Administrador}
       email: ${ADMIN_EMAIL}
       password: ${ADMIN_PASSWORD}
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}

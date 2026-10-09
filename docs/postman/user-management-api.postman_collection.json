@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "User Management API",
-    "description": "Cenários do dia 3 (CRUD, permissões, endereço principal, exclusão lógica).\n\nIMPORTANTE: o H2 é em memória. Reinicie a aplicação antes de rodar a coleção inteira, senão o e-mail da Maria já existirá. Rode na ordem (Collection Runner).",
+    "description": "Cenários dos dias 3 e 4 (CRUD, permissões, endereço principal, exclusão lógica).\n\nIMPORTANTE: o H2 é em memória. Reinicie a aplicação antes de rodar a coleção inteira, senão o e-mail da Maria já existirá. Rode na ordem (Collection Runner). Os cenários do ViaCEP exigem acesso à internet.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -326,7 +326,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Maria Dois\",\n  \"email\": \"maria2@teste.com\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"20040020\", \"street\": \"Rua da Assembleia\", \"number\": \"200\", \"state\": \"RJ\", \"city\": \"Rio de Janeiro\", \"district\": \"Centro\", \"mainAddress\": true}\n  ]\n}",
+              "raw": "{\n  \"name\": \"Maria Dois\",\n  \"email\": \"maria2@teste.com\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"01310100\", \"street\": \"Avenida Paulista\", \"number\": \"200\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Bela Vista\", \"mainAddress\": true}\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -775,7 +775,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"20040020\", \"street\": \"Rua da Assembleia\", \"number\": \"200\", \"state\": \"RJ\", \"city\": \"Rio de Janeiro\", \"district\": \"Centro\", \"mainAddress\": false}\n  ]\n}",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"01310100\", \"street\": \"Avenida Paulista\", \"number\": \"200\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Bela Vista\", \"mainAddress\": false}\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -834,7 +834,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"20040020\", \"street\": \"Rua da Assembleia\", \"number\": \"200\", \"state\": \"RJ\", \"city\": \"Rio de Janeiro\", \"district\": \"Centro\", \"mainAddress\": true}\n  ]\n}",
+              "raw": "{\n  \"name\": \"Maria Silva\",\n  \"phone\": \"11999990000\",\n  \"addresses\": [\n    {\"id\": {{mariaAddressId}}, \"cep\": \"01001000\", \"street\": \"Praca da Se\", \"number\": \"100\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Se\", \"mainAddress\": true},\n    {\"cep\": \"01310100\", \"street\": \"Avenida Paulista\", \"number\": \"200\", \"state\": \"SP\", \"city\": \"Sao Paulo\", \"district\": \"Bela Vista\", \"mainAddress\": true}\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -906,6 +906,532 @@
                   "const a = pm.response.json().addresses;",
                   "pm.test(\"Endereço removido não aparece na resposta\", () => pm.expect(a.length).to.eql(1));",
                   "pm.test(\"Sobrou o principal\", () => pm.expect(a[0].mainAddress).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dia 4: CEP, listagem e Problem Details",
+      "item": [
+        {
+          "name": "D4.1 Listar usuários (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Estrutura de página\", () => pm.expect(b).to.have.keys([\"content\",\"page\",\"size\",\"totalElements\",\"totalPages\",\"first\",\"last\"]));",
+                  "pm.test(\"Contém ADMIN e Maria\", () => pm.expect(b.totalElements).to.be.at.least(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.2 Filtrar por cidade (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?city=paulo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "paulo"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().content;",
+                  "pm.test(\"Retorna ao menos um\", () => pm.expect(c.length).to.be.at.least(1));",
+                  "pm.test(\"Todos da cidade filtrada\", () => pm.expect(c.every(u => (u.city || \"\").toLowerCase().includes(\"paulo\"))).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.3 Buscar por texto (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?search=maria",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "maria"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Só a Maria\", () => { pm.expect(b.totalElements).to.eql(1); pm.expect(b.content[0].email).to.eql(\"maria@teste.com\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.4 Paginação e ordenação por cidade (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?sort=city,desc&size=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "city,desc"
+                },
+                {
+                  "key": "size",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Uma linha por página\", () => { pm.expect(b.content.length).to.eql(1); pm.expect(b.size).to.eql(1); });",
+                  "pm.test(\"Mais de uma página\", () => pm.expect(b.totalPages).to.be.at.least(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.5 Ordenação inválida (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?sort=password,asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "password,asc"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Corpo em application/problem+json\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.6 Status inválido no filtro (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?status=XYZ",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "XYZ"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Corpo em application/problem+json\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.7 USER tenta listar (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{mariaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Corpo em application/problem+json\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.8 CEP inexistente (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cep Ruim\",\n  \"email\": \"cepruim@teste.com\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"99999999\", \"street\": \"Rua X\", \"number\": \"10\", \"state\": \"SP\", \"city\": \"Cidade X\", \"district\": \"Centro\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Corpo em application/problem+json\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));",
+                  "pm.test(\"Detalhe cita o CEP\", () => pm.expect(pm.response.json().detail).to.include(\"99999999\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.9 CEP malformado (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cep Curto\",\n  \"email\": \"cepcurto@teste.com\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"123\", \"street\": \"Rua X\", \"number\": \"10\", \"state\": \"SP\", \"city\": \"Cidade X\", \"district\": \"Centro\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Corpo em application/problem+json\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));",
+                  "pm.test(\"errors aponta o campo do CEP\", () => pm.expect(pm.response.json().errors.some(e => e.field.includes(\"cep\"))).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.10 Endereço enriquecido pelo ViaCEP (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Joana Souza\",\n  \"email\": \"joana@teste.com\",\n  \"password\": \"Senha@1234\",\n  \"role\": \"USER\",\n  \"addresses\": [\n    {\"cep\": \"01001000\", \"street\": \"rua qualquer\", \"number\": \"10\", \"state\": \"SP\", \"city\": \"Cidade Errada\", \"district\": \"Centro\", \"mainAddress\": true}\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const a = pm.response.json().addresses[0];",
+                  "pm.test(\"Cidade vem do ViaCEP\", () => pm.expect(a.city).to.eql(\"São Paulo\"));",
+                  "pm.test(\"Rua vem do ViaCEP\", () => pm.expect(a.street).to.include(\"Sé\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "D4.11 Sem token devolve Problem Details (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Corpo em application/problem+json\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));",
+                  "pm.test(\"instance traz o caminho\", () => pm.expect(pm.response.json().instance).to.eql(\"/api/v1/users\"));"
                 ]
               }
             }

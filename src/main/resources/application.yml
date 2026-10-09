@@ -7,3 +7,18 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+  cache:
+    cache-names: viacep
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=24h
+  data:
+    web:
+      pageable:
+        default-page-size: 10
+        max-page-size: 100
+
+app:
+  viacep:
+    base-url: https://viacep.com.br/ws
+    connect-timeout: 2s
+    read-timeout: 3s
