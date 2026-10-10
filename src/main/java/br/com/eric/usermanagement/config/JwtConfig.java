@@ -20,18 +20,18 @@ import java.nio.charset.StandardCharsets;
 public class JwtConfig {
 
     @Bean
-    SecretKey jwtSecretKey(SecurityProperties properties) {
+    public SecretKey jwtSecretKey(SecurityProperties properties) {
         return new SecretKeySpec(
                 properties.jwt().secret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
     @Bean
-    JwtEncoder jwtEncoder(SecretKey jwtSecretKey) {
+    public JwtEncoder jwtEncoder(SecretKey jwtSecretKey) {
         return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSecretKey));
     }
 
     @Bean
-    JwtDecoder jwtDecoder(SecretKey jwtSecretKey) {
+    public JwtDecoder jwtDecoder(SecretKey jwtSecretKey) {
         return NimbusJwtDecoder.withSecretKey(jwtSecretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();

@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+
+app:
+  security:
+    jwt:
+      secret: test-only-secret-key-with-more-than-32-characters
+      expiration-minutes: 5
+    admin:
+      name: Admin Teste
+      email: admin@test.local
+      password: Admin@123
+  viacep:
+    base-url: http://localhost:9

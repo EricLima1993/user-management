@@ -15,7 +15,7 @@ Cada usuário possui um ou mais endereços, validados pela API pública do [ViaC
 - [x] Listagem com paginação, filtros e ordenação
 - [x] Integração com o ViaCEP, com validação de CEP e cache
 - [x] Tratamento de erros (Problem Details) e documentação OpenAPI
-- [ ] Testes e relatório de cobertura
+- [x] Testes automatizados e relatório de cobertura (Jacoco, meta mínima de 70%)
 - [ ] Docker e Docker Compose
 
 > Este README é atualizado conforme o desenvolvimento avança.
@@ -29,6 +29,7 @@ Cada usuário possui um ou mais endereços, validados pela API pública do [ViaC
 | Segurança | Spring Security, JWT, BCrypt |
 | Validação e mapeamento | Bean Validation, MapStruct, Lombok |
 | Integração externa | RestClient (ViaCEP), cache com Caffeine |
+| Testes | JUnit 5, Mockito, AssertJ, MockMvc, Jacoco |
 | Banco de dados | PostgreSQL (produção), H2 em modo PostgreSQL (desenvolvimento e testes) |
 | Documentação | OpenAPI / Swagger UI (springdoc) |
 | Infraestrutura | Docker e Docker Compose |
@@ -107,7 +108,30 @@ _Será documentado após a conclusão do Docker Compose._
 
 ### Testes
 
-_Será documentado após a implementação dos testes._
+Os testes não dependem de internet nem de banco instalado: usam H2 em memória (modo PostgreSQL) e o ViaCEP é simulado.
+
+```bash
+# executa todos os testes
+./mvnw test
+
+# executa os testes, gera o relatório de cobertura e valida a meta mínima
+./mvnw verify
+```
+
+No Windows (PowerShell), use `.\mvnw.cmd` no lugar de `./mvnw`.
+
+- **Relatório de cobertura:** `target/site/jacoco/index.html`.
+- **Meta de cobertura:** o `verify` falha se a cobertura de linhas ficar abaixo de **70%**. Ficam fora da medição apenas o código gerado pelo MapStruct e a classe `main`.
+- **Cobertura atual:** cerca de **97% das linhas** e **90% dos branches** (44 classes analisadas). Services, controllers, segurança, DTOs e entidades estão com 100% de linhas.
+
+| Tipo | Classes | O que cobre |
+|---|---|---|
+| Unitários (Mockito) | `UserServiceTest`, `CepValidationServiceTest`, `AuthServiceTest`, `JwtServiceTest`, `UserAuthorizationTest` | Regras de negócio, permissões, endereço principal, exclusão lógica, JWT, com o client do ViaCEP mockado |
+| Client do ViaCEP | `ViaCepClientTest` | Resposta válida, CEP inexistente, erros HTTP, timeout e conexão recusada, contra um servidor HTTP local |
+| Repositório | `UserRepositoryTest`, `UserSearchRepositoryTest` | Auditoria, exclusão lógica, e-mail único e a listagem com filtros, ordenação e paginação |
+| Integração (MockMvc) | `AuthApiTest`, `UserApiTest` | Contrato da API, autenticação e autorização, validação de CEP (400, 422 e 503), erros em Problem Details |
+
+Os testes que sobem o contexto do Spring usam o perfil `test` (`src/test/resources/application-test.yml`) e compartilham o mesmo contexto. O ViaCEP é substituído por um mock (`@MockitoBean`).
 
 ## Autenticação
 
