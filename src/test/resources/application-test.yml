@@ -5,6 +5,8 @@ spring:
     password:
 
 app:
+  cors:
+    allowed-origins: http://localhost:4200
   security:
     jwt:
       secret: test-only-secret-key-with-more-than-32-characters

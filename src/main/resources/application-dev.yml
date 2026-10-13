@@ -7,6 +7,8 @@ spring:
     console:
       enabled: true
 app:
+  cors:
+    allowed-origins: http://localhost:4200
   security:
     jwt:
       secret: dev-only-secret-change-in-prod-0123456789-abcdef

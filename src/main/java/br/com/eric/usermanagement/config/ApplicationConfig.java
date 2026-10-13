@@ -7,5 +7,5 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableCaching
-@EnableConfigurationProperties(ViaCepProperties.class)
+@EnableConfigurationProperties({ViaCepProperties.class, CorsProperties.class})
 public class ApplicationConfig {}
