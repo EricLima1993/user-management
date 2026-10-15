@@ -16,6 +16,7 @@ Cada usuário possui um ou mais endereços, validados pela API pública do [ViaC
 - [x] Integração com o ViaCEP, com validação de CEP e cache
 - [x] Tratamento de erros (Problem Details) e documentação OpenAPI
 - [x] CORS configurável por variável de ambiente, para o frontend
+- [x] Dados de exemplo no perfil `dev` (12 usuários)
 - [x] Testes automatizados e relatório de cobertura (Jacoco, meta mínima de 70%)
 - [ ] Docker e Docker Compose
 
@@ -39,7 +40,7 @@ Cada usuário possui um ou mais endereços, validados pela API pública do [ViaC
 
 ```
 src/main/java/br/com/eric/usermanagement/
-├── config         # Auditoria, cache, CORS, OpenAPI
+├── config         # Auditoria, cache, CORS, OpenAPI, ADMIN inicial e dados de exemplo (dev)
 ├── controller
 ├── service
 ├── repository
@@ -75,11 +76,27 @@ No Windows (PowerShell):
 .\mvnw.cmd spring-boot:run
 ```
 
-O perfil `dev` é o padrão. A aplicação sobe na porta `8080` com banco H2 em memória, e as migrations do Flyway criam as tabelas automaticamente. Os dados são recriados a cada execução.
+O perfil `dev` é o padrão. A aplicação sobe na porta `8080` com banco H2 em memória, e as migrations do Flyway criam as tabelas automaticamente. Os dados são recriados a cada execução, e o `DevDataSeeder` cadastra 12 usuários de exemplo (ver a seção abaixo).
 
 - Swagger UI: <http://localhost:8080/swagger-ui.html> (faça o login, copie o `accessToken` e use o botão **Authorize**)
 - Console do H2: <http://localhost:8080/h2-console> (JDBC URL: `jdbc:h2:mem:usersdb`, usuário `sa`, sem senha)
 - Frontend: o perfil `dev` libera o CORS para `http://localhost:4200` (ver a seção CORS).
+
+### Dados de exemplo (apenas perfil `dev`)
+
+Na subida, o `DevDataSeeder` cria 12 usuários para facilitar os testes da listagem, dos filtros e do frontend. A classe só existe no perfil `dev` (`@Profile("dev")`), então não roda em produção nem nos testes. Se um e-mail já existir, ele é ignorado.
+
+| Resumo           | Detalhe                                                                          |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Senha de todos   | `Senha@123`                                                                      |
+| Administradores  | `ana.souza@teste.com` e `henrique.alves@teste.com`                               |
+| Inativos         | `diego.rocha@teste.com` e `joao.pereira@teste.com`                               |
+| Dois endereços   | `carla.mendes@teste.com` (Rio de Janeiro e São Paulo)                            |
+| Demais           | Usuários comuns ativos, cada um com um endereço em uma capital diferente         |
+
+Junto com o `admin@local.dev`, a listagem passa a ter 13 usuários.
+
+> **Ao reiniciar a API no perfil `dev`, saia e entre de novo no frontend.** O H2 é recriado e os ids mudam, então uma sessão aberta antes do reinício aponta para um usuário que já não é o mesmo.
 
 ### Perfil de produção (PostgreSQL)
 
@@ -146,6 +163,8 @@ A API é stateless e usa JWT (assinado com HS256). O endpoint de login é públi
 | E-mail            | Senha       | Perfil |
 | ----------------- | ----------- | ------ |
 | `admin@local.dev` | `Admin@123` | ADMIN  |
+
+No perfil `dev` também existem 12 usuários de exemplo, todos com a senha `Senha@123` (ver "Dados de exemplo").
 
 Em produção, o ADMIN inicial é criado com `ADMIN_EMAIL` e `ADMIN_PASSWORD`. A criação só acontece se o e-mail ainda não existir.
 
