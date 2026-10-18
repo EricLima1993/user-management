@@ -18,7 +18,7 @@ Cada usuário possui um ou mais endereços, validados pela API pública do [ViaC
 - [x] CORS configurável por variável de ambiente, para o frontend
 - [x] Dados de exemplo no perfil `dev` (12 usuários)
 - [x] Testes automatizados e relatório de cobertura (Jacoco, meta mínima de 70%)
-- [ ] Docker e Docker Compose
+- [x] Docker e Docker Compose (API e PostgreSQL)
 
 > Este README é atualizado conforme o desenvolvimento avança.
 
@@ -124,7 +124,40 @@ SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run
 
 ### Docker
 
-*Será documentado após a conclusão do Docker Compose.*
+O `docker-compose.yml` sobe a API (perfil `prod`) e um PostgreSQL 16, com os dados guardados em um volume. É necessário ter o Docker com Compose instalado e em execução.
+
+```
+# 1. cria o arquivo de variáveis a partir do modelo (Windows PowerShell; no Linux/macOS use cp)
+copy .env.example .env
+
+# 2. compila a imagem e sobe os dois serviços
+docker compose up --build
+```
+
+Quando aparecer `Started UserManagementApiApplication`, a API está em `http://localhost:8080` e o Swagger em `http://localhost:8080/swagger-ui.html`. Para entrar, use o `ADMIN_EMAIL` e o `ADMIN_PASSWORD` definidos no `.env`.
+
+O `.env` contém segredos e **não deve ser enviado ao Git** (já está no `.gitignore`). O `.env.example` traz apenas valores de exemplo; troque a senha do banco, o `JWT_SECRET` (mínimo de 32 caracteres) e a senha do ADMIN fora de testes locais. Se uma variável obrigatória faltar, o Compose para e informa qual é.
+
+| Serviço | Imagem                 | Função                                                                                   |
+| ------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| `db`    | `postgres:16-alpine`   | Banco de dados, com *healthcheck* e dados persistidos no volume `pgdata`                 |
+| `api`   | construída pelo `Dockerfile` | API Spring Boot; só inicia depois que o banco estiver saudável (`service_healthy`) |
+
+| Comando                          | O que faz                                                                  |
+| -------------------------------- | -------------------------------------------------------------------------- |
+| `docker compose up --build`      | Constrói e sobe tudo, mostrando os logs                                    |
+| `docker compose up -d`           | Sobe em segundo plano                                                      |
+| `docker compose logs -f api`     | Acompanha os logs da API                                                   |
+| `docker compose down`            | Remove os containers e **mantém** os dados do banco                        |
+| `docker compose down -v`         | Remove os containers **e apaga** o volume, ou seja, todos os dados do banco |
+
+Observações:
+
+- A imagem é construída em duas etapas: a primeira (JDK 21) compila o `.jar` com o Maven, e a segunda (JRE 21) só o executa, com um usuário sem privilégios. Os testes não rodam durante o build da imagem; use `./mvnw verify`.
+- O contêiner usa o perfil `prod`: PostgreSQL, segredos por variável de ambiente e apenas o ADMIN inicial. Os usuários de exemplo do `DevDataSeeder` existem somente no perfil `dev`.
+- O PostgreSQL não é publicado para a máquina local. Para acessá-lo com uma ferramenta externa, acrescente `ports: ["5432:5432"]` ao serviço `db`.
+- A origem liberada no CORS vem de `CORS_ALLOWED_ORIGINS` (padrão `http://localhost:4200`, a do frontend em desenvolvimento).
+- Os horários são gravados em UTC, que é o fuso do contêiner.
 
 ### Testes
 

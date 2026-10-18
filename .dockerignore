@@ -1,0 +1,8 @@
+# Nada disso precisa entrar no contexto de build
+.git
+.idea
+target
+docs
+*.md
+.env
+HELP.md
